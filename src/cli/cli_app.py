@@ -28,28 +28,35 @@ class BackupCLI:
 
     def backup_from_config(self):
         """Run backup using config settings"""
-        input_path = self.config_manager.get('backup.input_path')
+        input_paths = self.config_manager.get('backup.input_paths', [])
         output_path = self.config_manager.get('backup.output_path')
 
-        if not input_path or not output_path:
-            self.logger.error("Source and destination folders not configured")
-            self.logger.error("Please use GUI to configure folders first")
+        if not input_paths or len(input_paths) == 0:
+            self.logger.error("No source folders configured")
+            self.logger.error("Please use GUI to add source folders first")
+            return False
+
+        if not output_path:
+            self.logger.error("Destination folder not configured")
+            self.logger.error("Please use GUI to configure destination folder first")
             return False
 
         self.logger.info("Starting backup (CLI mode)")
-        self.logger.info(f"Source folder: {input_path}")
+        self.logger.info(f"Source folders: {len(input_paths)} folder(s)")
+        for idx, path in enumerate(input_paths, 1):
+            self.logger.info(f"  [{idx}] {path}")
         self.logger.info(f"Destination folder: {output_path}")
 
-        # Run backup
-        result = self.backup_engine.backup(input_path, output_path)
+        # Run multi-folder backup
+        result = self.backup_engine.backup_multiple(input_paths, output_path)
 
         if result['success']:
-            self.logger.success("Backup completed successfully")
+            self.logger.success("All backups completed successfully")
             self.config_manager.update_last_backup()
             self.config_manager.save_config()
             return True
         else:
-            self.logger.error(f"Error occurred: {result.get('error', 'Unknown error')}")
+            self.logger.error(f"Some backups failed: {result['failed']}/{result['total_folders']} folders")
             return False
 
     def show_status(self):
@@ -58,11 +65,18 @@ class BackupCLI:
         print("Backup System Status")
         print("=" * 60)
 
-        # Folders
-        input_path = self.config_manager.get('backup.input_path', '-')
+        # Source Folders
+        input_paths = self.config_manager.get('backup.input_paths', [])
+        print(f"\nSource folders: {len(input_paths)} folder(s)")
+        if len(input_paths) == 0:
+            print("  (No folders configured)")
+        else:
+            for idx, path in enumerate(input_paths, 1):
+                print(f"  [{idx}] {path}")
+
+        # Destination Folder
         output_path = self.config_manager.get('backup.output_path', '-')
-        print(f"Source folder: {input_path}")
-        print(f"Destination folder: {output_path}")
+        print(f"\nDestination folder: {output_path}")
 
         # Last backup
         last_backup = self.config_manager.get('backup.last_backup')
@@ -95,67 +109,37 @@ class BackupCLI:
 
 
 def main():
-    """Main function"""
-    parser = argparse.ArgumentParser(
-        description='CLI Application for Automatic Backup',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Usage examples:
-
-  # Run backup using saved configuration
-  python run_cli.py --backup
-
-  # Display system status
-  python run_cli.py --status
-
-  # Clean up old log files
-  python run_cli.py --cleanup-logs
-
-Note: Configure source and destination folders using the GUI first.
-Use Windows Task Scheduler to schedule automatic backups.
-        """
-    )
-
-    parser.add_argument(
-        '--backup',
-        action='store_true',
-        help='Run backup using saved configuration'
-    )
-
-    parser.add_argument(
-        '--status',
-        action='store_true',
-        help='Display system status'
-    )
-
-    parser.add_argument(
-        '--cleanup-logs',
-        action='store_true',
-        help='Clean up old log files'
-    )
-
-    args = parser.parse_args()
-
+    """Main function - Auto-run all functions sequentially"""
     # Create CLI instance
     cli = BackupCLI()
 
-    # Display status
-    if args.status:
-        cli.show_status()
-        return
+    print("\n" + "=" * 60)
+    print("AUTO-RUN MODE: Running all functions sequentially...")
+    print("=" * 60 + "\n")
 
-    # Clean up logs
-    if args.cleanup_logs:
-        cli.cleanup_logs()
-        return
+    # Step 1: Display system status
+    print("\n[STEP 1/3] Displaying system status...")
+    print("-" * 60)
+    cli.show_status()
 
-    # Run backup
-    if args.backup:
-        success = cli.backup_from_config()
-        sys.exit(0 if success else 1)
+    # Step 2: Run backup
+    print("\n[STEP 2/3] Running backup...")
+    print("-" * 60)
+    success = cli.backup_from_config()
 
-    # No arguments - show help
-    parser.print_help()
+    # Step 3: Clean up old logs
+    print("\n[STEP 3/3] Cleaning up old logs...")
+    print("-" * 60)
+    cli.cleanup_logs()
+
+    # Final summary
+    print("\n" + "=" * 60)
+    print("AUTO-RUN COMPLETED")
+    print("=" * 60)
+    print(f"Backup status: {'SUCCESS' if success else 'FAILED'}")
+    print("=" * 60 + "\n")
+
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":

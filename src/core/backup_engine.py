@@ -3,6 +3,7 @@ File/Folder Backup System
 - Copy entire folders with all subfolders and files
 - Display progress and status
 - Log operations
+- Compress to ZIP if backing up same day
 """
 
 import shutil
@@ -10,6 +11,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 import time
+import zipfile
 
 
 class BackupEngine:
@@ -85,6 +87,101 @@ class BackupEngine:
                 return f"{bytes_size:.2f} {unit}"
             bytes_size /= 1024.0
         return f"{bytes_size:.2f} PB"
+
+    def _get_backup_folder(self, destination, source_name):
+        """
+        Get or create backup folder
+
+        Args:
+            destination: destination folder path
+            source_name: name of source folder
+
+        Returns:
+            Path: path to backup folder (e.g., backup_FolderName)
+        """
+        backup_folder_name = f"backup_{source_name}"
+        backup_folder = Path(destination) / backup_folder_name
+
+        return backup_folder
+
+    def _create_zip_backup(self, source_path, backup_folder):
+        """
+        Create ZIP file backup inside backup folder
+
+        Args:
+            source_path: path of source folder
+            backup_folder: path to backup folder
+
+        Returns:
+            dict: backup operation result
+        """
+        start_time = time.time()
+        source = Path(source_path)
+
+        # Create ZIP filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        zip_filename = f"{source.name}_{timestamp}.zip"
+        zip_path = backup_folder / zip_filename
+
+        if self.logger:
+            self.logger.info(f"Creating ZIP backup: {zip_filename}")
+
+        try:
+            # Create backup folder if not exists
+            backup_folder.mkdir(parents=True, exist_ok=True)
+
+            # Create ZIP file
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                # Add all files to ZIP
+                for root, dirs, files in os.walk(source):
+                    for file in files:
+                        file_path = Path(root) / file
+                        arcname = file_path.relative_to(source.parent)
+
+                        zipf.write(file_path, arcname)
+
+                        self.copied_files += 1
+                        file_size = file_path.stat().st_size
+                        self.copied_size += file_size
+
+                        # Update progress
+                        if self.callback:
+                            progress_percent = (self.copied_files / self.total_files * 100) if self.total_files > 0 else 0
+                            self.callback(
+                                self.copied_files,
+                                self.total_files,
+                                f"Compressing: {file_path.name} ({progress_percent:.1f}%)"
+                            )
+
+            elapsed_time = time.time() - start_time
+
+            if self.logger:
+                self.logger.success(f"ZIP backup created: {zip_filename}")
+                self.logger.info(f"ZIP size: {self._format_size(zip_path.stat().st_size)}")
+                self.logger.info(f"Time elapsed: {elapsed_time:.2f} seconds")
+
+            return {
+                'success': True,
+                'total_files': self.total_files,
+                'copied_files': self.copied_files,
+                'failed_files': self.failed_files,
+                'total_size': self.total_size,
+                'copied_size': self.copied_size,
+                'elapsed_time': elapsed_time,
+                'destination': str(zip_path),
+                'is_zip': True,
+                'errors': self.errors
+            }
+
+        except Exception as e:
+            error_msg = f"Error creating ZIP: {e}"
+            if self.logger:
+                self.logger.error(error_msg)
+
+            return {
+                'success': False,
+                'error': error_msg
+            }
 
     def _copy_file_with_progress(self, src, dst):
         """
@@ -203,85 +300,80 @@ class BackupEngine:
                 'copied_files': 0
             }
 
-        # Create destination folder name with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_folder_name = f"{source.name}_{timestamp}"
-        final_destination = destination / backup_folder_name
+        # Get backup folder (e.g., backup_FolderName)
+        backup_folder = self._get_backup_folder(destination, source.name)
 
-        # Create destination folder
-        try:
-            final_destination.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            error_msg = f"Cannot create destination folder: {e}"
-            if self.logger:
-                self.logger.error(error_msg)
-            return {
-                'success': False,
-                'error': error_msg
-            }
-
-        # Start copying files
         if self.logger:
-            self.logger.info(f"Starting file copy...")
+            self.logger.info("📦 Creating ZIP backup...")
 
-        try:
-            # Loop through and copy files one by one
-            for root, dirs, files in os.walk(source):
-                root_path = Path(root)
-                relative_path = root_path.relative_to(source)
-                dest_dir = final_destination / relative_path
+        # Always create ZIP backup
+        return self._create_zip_backup(source, backup_folder)
 
-                # Create subfolder
-                dest_dir.mkdir(parents=True, exist_ok=True)
+    def backup_multiple(self, source_paths, destination_path):
+        """
+        Backup multiple folders
 
-                # Copy files
-                for file in files:
-                    src_file = root_path / file
-                    dst_file = dest_dir / file
+        Args:
+            source_paths: list of source folder paths
+            destination_path: destination folder path
 
-                    self._copy_file_with_progress(src_file, dst_file)
+        Returns:
+            dict: backup operation result with details for each folder
+        """
+        if not isinstance(source_paths, list):
+            source_paths = [source_paths]
 
-        except Exception as e:
-            error_msg = f"Error during copy: {e}"
+        if self.logger:
+            self.logger.info("=" * 60)
+            self.logger.info(f"Starting multi-folder backup")
+            self.logger.info(f"Total folders: {len(source_paths)}")
+            self.logger.info(f"Destination: {destination_path}")
+            self.logger.info("=" * 60)
+
+        results = []
+        total_success = 0
+        total_failed = 0
+        start_time = time.time()
+
+        for idx, source_path in enumerate(source_paths, 1):
+            source_name = Path(source_path).name
+
             if self.logger:
-                self.logger.error(error_msg)
+                self.logger.info(f"\n[{idx}/{len(source_paths)}] Processing: {source_name}")
+                self.logger.info("-" * 60)
 
-        # Calculate elapsed time
-        elapsed_time = time.time() - start_time
+            # Backup this folder
+            result = self.backup(source_path, destination_path)
+            results.append({
+                'source': source_path,
+                'result': result
+            })
+
+            if result['success']:
+                total_success += 1
+            else:
+                total_failed += 1
+
+        total_time = time.time() - start_time
 
         # Summary
-        success = self.failed_files == 0
-
         if self.logger:
-            self.logger.info("-" * 60)
-            self.logger.info(f"Backup completed")
-            self.logger.info(f"Total files: {self.total_files:,}")
-            self.logger.info(f"Copied successfully: {self.copied_files:,}")
-
-            if self.failed_files > 0:
-                self.logger.warning(f"Failed to copy: {self.failed_files:,}")
-
-            self.logger.info(f"Total size: {self._format_size(self.copied_size)}")
-            self.logger.info(f"Time elapsed: {elapsed_time:.2f} seconds")
-            self.logger.info(f"Saved to: {final_destination}")
-
-            if success:
-                self.logger.success("Backup completed successfully")
-            else:
-                self.logger.warning("Backup completed but some files failed to copy")
-
+            self.logger.info("\n" + "=" * 60)
+            self.logger.info("MULTI-FOLDER BACKUP SUMMARY")
+            self.logger.info("=" * 60)
+            self.logger.info(f"Total folders: {len(source_paths)}")
+            self.logger.info(f"Successful: {total_success}")
+            self.logger.info(f"Failed: {total_failed}")
+            self.logger.info(f"Total time: {total_time:.2f} seconds")
             self.logger.info("=" * 60)
 
         return {
-            'success': success,
-            'total_files': self.total_files,
-            'copied_files': self.copied_files,
-            'failed_files': self.failed_files,
-            'total_size': self.total_size,
-            'copied_size': self.copied_size,
-            'elapsed_time': elapsed_time,
-            'destination': str(final_destination),
-            'errors': self.errors
+            'success': total_failed == 0,
+            'total_folders': len(source_paths),
+            'successful': total_success,
+            'failed': total_failed,
+            'elapsed_time': total_time,
+            'results': results
         }
 
     def quick_backup(self, source_path, destination_path):

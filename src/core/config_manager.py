@@ -35,7 +35,7 @@ class ConfigManager:
         """
         return {
             "backup": {
-                "input_path": "",
+                "input_paths": [],  # Changed from input_path to input_paths (array)
                 "output_path": "",
                 "last_backup": None
             },
@@ -71,6 +71,15 @@ class ConfigManager:
         try:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
+
+            # Backward compatibility: convert old input_path to input_paths
+            if 'backup' in config:
+                if 'input_path' in config['backup'] and 'input_paths' not in config['backup']:
+                    old_path = config['backup']['input_path']
+                    config['backup']['input_paths'] = [old_path] if old_path else []
+                    del config['backup']['input_path']
+                elif 'input_paths' not in config['backup']:
+                    config['backup']['input_paths'] = []
 
             # Update last_updated
             if 'app_info' not in config:
@@ -157,16 +166,44 @@ class ConfigManager:
         """Get backup settings"""
         return self.config.get('backup', {})
 
-    def set_backup_settings(self, input_path, output_path):
+    def set_backup_settings(self, input_paths, output_path):
         """
         Set backup paths
 
         Args:
-            input_path: source folder path
+            input_paths: list of source folder paths
             output_path: destination folder path
         """
-        self.set('backup.input_path', input_path)
+        self.set('backup.input_paths', input_paths if isinstance(input_paths, list) else [input_paths])
         self.set('backup.output_path', output_path)
+
+    def add_input_path(self, path):
+        """
+        Add a source folder path
+
+        Args:
+            path: source folder path to add
+        """
+        input_paths = self.get('backup.input_paths', [])
+        if path and path not in input_paths:
+            input_paths.append(path)
+            self.set('backup.input_paths', input_paths)
+
+    def remove_input_path(self, path):
+        """
+        Remove a source folder path
+
+        Args:
+            path: source folder path to remove
+        """
+        input_paths = self.get('backup.input_paths', [])
+        if path in input_paths:
+            input_paths.remove(path)
+            self.set('backup.input_paths', input_paths)
+
+    def clear_input_paths(self):
+        """Clear all source folder paths"""
+        self.set('backup.input_paths', [])
 
     def update_last_backup(self):
         """Update last backup time"""
@@ -200,19 +237,21 @@ class ConfigManager:
         Returns:
             tuple: (input_valid, output_valid, error_message)
         """
-        input_path = self.get('backup.input_path')
+        input_paths = self.get('backup.input_paths', [])
         output_path = self.get('backup.output_path')
 
-        # Check input path
-        if not input_path:
-            return False, False, "Please select source folder"
+        # Check input paths
+        if not input_paths or len(input_paths) == 0:
+            return False, False, "Please add at least one source folder"
 
-        input_path_obj = Path(input_path)
-        if not input_path_obj.exists():
-            return False, False, f"Source folder not found: {input_path}"
+        # Validate each input path
+        for input_path in input_paths:
+            input_path_obj = Path(input_path)
+            if not input_path_obj.exists():
+                return False, False, f"Source folder not found: {input_path}"
 
-        if not input_path_obj.is_dir():
-            return False, False, f"Source is not a folder: {input_path}"
+            if not input_path_obj.is_dir():
+                return False, False, f"Source is not a folder: {input_path}"
 
         # Check output path
         if not output_path:
