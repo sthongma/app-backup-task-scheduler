@@ -1,0 +1,182 @@
+========================================
+WINDOWS TASK SCHEDULER SETUP GUIDE
+========================================
+
+This guide will help you set up automatic backups using Windows Task Scheduler.
+
+========================================
+STEP 1: Configure Backup Paths
+========================================
+
+1. Double-click "open_gui.bat" to launch the GUI
+2. Select your Source Folder (folder to backup)
+3. Select your Destination Folder (where backups will be stored)
+4. Click "Backup Now" to test (optional)
+5. Close the GUI - settings are saved automatically
+
+
+========================================
+STEP 2: Create Windows Task Scheduler Task
+========================================
+
+Method A: Quick Setup (Basic)
+-----------------------------
+1. Open Task Scheduler (search "Task Scheduler" in Start menu)
+2. Click "Create Basic Task..." in the right panel
+3. Name: "File Backup" (or any name you want)
+4. Description: "Automatic file backup"
+5. Click "Next"
+
+6. Trigger: Choose when to run
+   - Daily (recommended)
+   - Weekly
+   - Monthly
+   - When computer starts
+   - When I log on
+   Click "Next"
+
+7. Set time and frequency, click "Next"
+
+8. Action: Select "Start a program", click "Next"
+
+9. Program/script: Browse and select:
+   C:\Users\USER\Desktop\sthongma\app-backup-task-scheduler\backup_now_silent.bat
+
+10. Click "Next", then "Finish"
+
+
+Method B: Advanced Setup (More Control)
+----------------------------------------
+1. Open Task Scheduler
+2. Click "Create Task..." (not Basic Task)
+3. General Tab:
+   - Name: "File Backup"
+   - Description: "Automatic file backup"
+   - Select "Run whether user is logged on or not" (optional)
+   - Check "Run with highest privileges" (if needed)
+
+4. Triggers Tab:
+   - Click "New..."
+   - Choose your schedule (Daily recommended):
+     * Daily: Set time (e.g., 2:00 AM)
+     * Or select "At log on" or "At startup"
+   - Click "OK"
+
+5. Actions Tab:
+   - Click "New..."
+   - Action: "Start a program"
+   - Program/script: Browse to:
+     C:\Users\USER\Desktop\sthongma\app-backup-task-scheduler\backup_now_silent.bat
+   - Click "OK"
+
+6. Conditions Tab (optional):
+   - Uncheck "Start the task only if the computer is on AC power"
+   - Check "Wake the computer to run this task" (if desired)
+
+7. Settings Tab (optional):
+   - Check "Run task as soon as possible after a scheduled start is missed"
+   - Check "If the task fails, restart every: 10 minutes"
+
+8. Click "OK" to save
+
+
+========================================
+STEP 3: Test Your Task
+========================================
+
+1. In Task Scheduler, find your task in the list
+2. Right-click the task and select "Run"
+3. Check if backup completed successfully:
+   - Run "check_status.bat" to see last backup time
+   - Or check the destination folder for new backup
+
+
+========================================
+AVAILABLE BAT FILES
+========================================
+
+backup_now.bat
+  - Run backup with visible console window
+  - Shows progress and results
+  - Good for manual testing
+
+backup_now_silent.bat
+  - Run backup completely in background
+  - No console window appears
+  - RECOMMENDED for Task Scheduler
+
+open_gui.bat
+  - Open the GUI application
+  - Configure source/destination folders
+  - Manual backup with visual interface
+
+check_status.bat
+  - Display backup system status
+  - Shows last backup time
+  - Shows log file information
+
+cleanup_logs.bat
+  - Delete old log files
+  - Run periodically to free up space
+
+
+========================================
+RECOMMENDED SCHEDULE
+========================================
+
+Daily Backup:
+- Time: 2:00 AM (when computer is usually idle)
+- Frequency: Every day
+- Wake computer: Yes (if you want backup even when asleep)
+
+OR
+
+On Startup:
+- Trigger: "At startup"
+- Delay: 5 minutes after startup
+- Good if you shut down your computer daily
+
+
+========================================
+TROUBLESHOOTING
+========================================
+
+Task doesn't run:
+1. Check if Python is in system PATH
+2. Right-click task → Properties → Actions
+3. Verify the path to .bat file is correct
+4. Try running the .bat file manually first
+
+Backup fails:
+1. Run "check_status.bat" to verify folders are configured
+2. Check if source folder exists
+3. Check if you have write permission to destination
+4. Check logs folder for error messages
+
+Can't find Task Scheduler:
+1. Press Windows key
+2. Type "Task Scheduler"
+3. Click "Task Scheduler" app
+
+
+========================================
+LOG FILES
+========================================
+
+All backup operations are logged to:
+  logs/backup_YYYY-MM-DD.log
+
+Check logs if backup fails or to verify backup completed successfully.
+
+
+========================================
+NOTES
+========================================
+
+- Make sure to configure source/destination folders in GUI first
+- backup_now_silent.bat is recommended for Task Scheduler (runs in background)
+- Logs are kept for 30 days by default (configurable in settings.json)
+- Each backup creates a timestamped folder in the destination
+- Old logs can be cleaned using cleanup_logs.bat
+
+========================================

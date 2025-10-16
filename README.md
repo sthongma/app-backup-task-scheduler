@@ -1,281 +1,207 @@
-# File Backup Scheduler - ระบบสำรองข้อมูลอัตโนมัติ
+# File Backup Application
 
-แอพพลิเคชันสำรองข้อมูลที่มีทั้ง **GUI** และ **CLI** สำหรับคัดลอกโฟลเดอร์อัตโนมัติตามตารางเวลาที่กำหนด
+Simple and reliable file backup application with GUI and CLI interfaces. Designed to work seamlessly with Windows Task Scheduler for automatic backups.
 
-## คุณสมบัติหลัก
+## Features
 
-### GUI Application (CustomTkinter)
-- ✅ **เลือกโฟลเดอร์ต้นทางและปลายทาง** - เลือกได้ง่ายผ่าน dialog
-- ✅ **คัดลอกทันที** - กดปุ่มเดียวสำรองข้อมูลได้ทันที
-- ✅ **ตั้งค่าการสำรองอัตโนมัติ** - รองรับหลายโหมด:
-  - ปิด (Backup ด้วยตนเอง)
-  - ทุกชั่วโมง
-  - ทุกวัน (เวลา 00:00 น.)
-  - กำหนดเอง (ตั้งช่วงเวลาเอง)
-- ✅ **แสดง Log แบบ Real-time** - ติดตามสถานะการทำงาน
-- ✅ **Dark/Light Theme** - สลับธีมได้
-- ✅ **บันทึกการตั้งค่า** - จำการตั้งค่าอัตโนมัติ
+- ✅ **Simple GUI** - Easy folder selection and one-click backup
+- ✅ **CLI Support** - Run backups from command line or scripts
+- ✅ **Windows Task Scheduler Ready** - Includes BAT files for easy automation
+- ✅ **Progress Tracking** - Real-time backup progress with file counting
+- ✅ **Timestamped Backups** - Each backup saved with date/time stamp
+- ✅ **Detailed Logging** - All operations logged with automatic cleanup
+- ✅ **Error Handling** - Comprehensive error handling and reporting
 
-### CLI Application
-- ✅ **สำรองครั้งเดียว** - รันผ่าน command line
-- ✅ **สำรองอัตโนมัติ** - รันในพื้นหลังตามตารางเวลา
-- ✅ **แสดงสถานะ** - ดูการตั้งค่าและสถานะปัจจุบัน
-- ✅ **รองรับ Arguments** - ควบคุมผ่าน command line
+## Quick Start
 
-### ระบบ Log Management
-- ✅ **Log แยกรายวัน** - สร้างไฟล์ log ใหม่ทุกวัน (backup_YYYY-MM-DD.log)
-- ✅ **ลบ Log เก่าอัตโนมัติ** - เก็บ log ตามจำนวนวันที่กำหนด (default: 30 วัน)
-- ✅ **จำกัดขนาดไฟล์** - ป้องกันไฟล์ log ใหญ่เกินไป
-- ✅ **Compress Log** - บีบอัดไฟล์ log เก่าเป็น .zip (optional)
+### 1. Configure Backup (First Time)
 
-## โครงสร้างโปรเจกต์
+Double-click **`open_gui.bat`** to open the GUI:
+1. Click "Browse" next to Source Folder - select folder to backup
+2. Click "Browse" next to Destination Folder - select where to save backups
+3. Click "Backup Now" to test (optional)
+4. Settings are saved automatically
 
-```
-app-backup-task-scheduler/
-├── src/
-│   ├── gui/
-│   │   └── main_window.py          # GUI หลัก (CustomTkinter)
-│   ├── core/
-│   │   ├── backup_engine.py        # ระบบคัดลอกไฟล์
-│   │   ├── scheduler.py            # ระบบตั้งเวลาอัตโนมัติ
-│   │   └── config_manager.py       # จัดการการตั้งค่า
-│   ├── cli/
-│   │   └── cli_app.py              # CLI Application
-│   └── utils/
-│       ├── logger.py               # ระบบ Log (รายวัน)
-│       └── log_manager.py          # จัดการ Log อัตโนมัติ
-├── config/
-│   └── settings.json               # ไฟล์การตั้งค่า
-├── logs/                           # โฟลเดอร์เก็บ Log
-│   ├── backup_2025-10-16.log
-│   └── ...
-├── requirements.txt
-├── run_gui.py                      # เปิด GUI
-├── run_cli.py                      # รัน CLI
-└── README.md
-```
+### 2. Run Manual Backup
 
-## การติดตั้ง
+**Option A: Using GUI**
+- Double-click **`open_gui.bat`**
+- Click "Backup Now" button
 
-### 1. Clone Repository
+**Option B: Using Command Line**
+- Double-click **`backup_now.bat`** (shows progress)
+- Or double-click **`backup_now_silent.bat`** (runs in background)
+
+### 3. Set Up Automatic Backup (Recommended)
+
+See **`WINDOWS_TASK_SCHEDULER_SETUP.txt`** for detailed instructions.
+
+**Quick Setup:**
+1. Open Task Scheduler (search in Start menu)
+2. Click "Create Basic Task..."
+3. Name: "File Backup"
+4. Choose schedule (e.g., Daily at 2:00 AM)
+5. Action: Start a program
+6. Browse to: **`backup_now_silent.bat`**
+7. Finish!
+
+## Available BAT Files
+
+| File | Description | When to Use |
+|------|-------------|-------------|
+| **`open_gui.bat`** | Open GUI application | Configure folders, manual backup with UI |
+| **`backup_now.bat`** | Run backup (visible) | Manual testing, see progress |
+| **`backup_now_silent.bat`** | Run backup (silent) | **Windows Task Scheduler** |
+| **`check_status.bat`** | Show system status | Check last backup time, verify settings |
+| **`cleanup_logs.bat`** | Clean old log files | Free up disk space |
+
+## Command Line Usage
 
 ```bash
-git clone <repository-url>
-cd app-backup-task-scheduler
+# Run backup using saved configuration
+python run_cli.py --backup
+
+# Display system status
+python run_cli.py --status
+
+# Clean up old log files
+python run_cli.py --cleanup-logs
+
+# Show help
+python run_cli.py --help
 ```
 
-### 2. ติดตั้ง Dependencies
+## How Backups Work
 
+1. **Timestamped Folders**: Each backup creates a new folder with format:
+   ```
+   FolderName_YYYYMMDD_HHMMSS
+   ```
+   Example: `MyData_20251016_140530`
+
+2. **File Structure Preserved**: All subfolders and files are copied exactly as-is
+
+3. **Progress Tracking**: Shows real-time progress during backup
+
+4. **Logging**: All operations logged to `logs/backup_YYYY-MM-DD.log`
+
+## Requirements
+
+- Python 3.7 or higher
+- Windows OS (for BAT files and Task Scheduler integration)
+
+### Python Dependencies
+
+```
+customtkinter>=5.2.0
+Pillow>=10.0.0
+```
+
+Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-**Dependencies:**
-- `customtkinter` - GUI framework สมัยใหม่
-- `APScheduler` - ระบบจัดตารางเวลา
-- `Pillow` - สำหรับ CustomTkinter
-
-## การใช้งาน
-
-### GUI Application
-
-เปิดแอพพลิเคชัน:
-
-```bash
-python run_gui.py
-```
-
-**วิธีใช้:**
-
-1. **เลือกโฟลเดอร์ต้นทาง** - คลิกปุ่ม "เลือกโฟลเดอร์" ในส่วน Input
-2. **เลือกโฟลเดอร์ปลายทาง** - คลิกปุ่ม "เลือกโฟลเดอร์" ในส่วน Output
-3. **คัดลอกทันที** - กดปุ่ม "คัดลอกทันที" (สีเขียว)
-4. **ตั้งค่าอัตโนมัติ**:
-   - เลือกโหมด: ปิด / ทุกชั่วโมง / ทุกวัน / กำหนดเอง
-   - กำหนดช่วงเวลา (สำหรับโหมด "กำหนดเอง")
-   - กดปุ่ม "บันทึกการตั้งค่า"
-
-### CLI Application
-
-#### 1. สำรองครั้งเดียว
-
-```bash
-python run_cli.py --input "C:/source" --output "D:/backup" --once
-```
-
-#### 2. สำรองอัตโนมัติ (ทุกชั่วโมง)
-
-```bash
-python run_cli.py --schedule hourly
-```
-
-#### 3. สำรองอัตโนมัติ (ทุกวัน)
-
-```bash
-python run_cli.py --schedule daily
-```
-
-#### 4. สำรองอัตโนมัติ (กำหนดเอง - ทุก 30 นาที)
-
-```bash
-python run_cli.py --schedule custom --interval 30
-```
-
-#### 5. สำรองตามการตั้งค่าใน Config
-
-```bash
-python run_cli.py --backup
-```
-
-#### 6. แสดงสถานะ
-
-```bash
-python run_cli.py --status
-```
-
-#### 7. ทำความสะอาด Log Files
-
-```bash
-python run_cli.py --cleanup-logs
-```
-
-### Options ทั้งหมด
+## Project Structure
 
 ```
---input PATH          โฟลเดอร์ต้นทาง
---output PATH         โฟลเดอร์ปลายทาง
---once                สำรองครั้งเดียวแล้วออก
---schedule MODE       เริ่มการสำรองอัตโนมัติ (hourly, daily, custom)
---interval MINUTES    ช่วงเวลาสำหรับโหมด custom (นาที)
---backup              สำรองตามการตั้งค่าใน config
---status              แสดงสถานะของระบบ
---cleanup-logs        ทำความสะอาด log files เก่า
+app-backup-task-scheduler/
+├── backup_now.bat                    # Run backup (visible console)
+├── backup_now_silent.bat             # Run backup (silent, for Task Scheduler)
+├── open_gui.bat                      # Open GUI application
+├── check_status.bat                  # Show system status
+├── cleanup_logs.bat                  # Clean old logs
+├── WINDOWS_TASK_SCHEDULER_SETUP.txt  # Detailed setup guide
+├── run_gui.py                        # GUI entry point
+├── run_cli.py                        # CLI entry point
+├── requirements.txt                  # Python dependencies
+├── config/
+│   └── settings.json                 # Configuration file
+├── logs/                             # Log files (auto-created)
+├── src/
+│   ├── gui/
+│   │   └── main_window.py           # GUI application
+│   ├── cli/
+│   │   └── cli_app.py               # CLI application
+│   ├── core/
+│   │   ├── backup_engine.py         # Backup logic
+│   │   └── config_manager.py        # Configuration management
+│   └── utils/
+│       ├── logger.py                # Logging system
+│       └── log_manager.py           # Log file management
 ```
 
-## การตั้งค่า
+## Configuration
 
-การตั้งค่าถูกเก็บในไฟล์ [config/settings.json](config/settings.json):
+Configuration is stored in `config/settings.json`:
 
 ```json
 {
-  "backup": {
-    "input_path": "C:/source",
-    "output_path": "D:/backup",
-    "last_backup": "2025-10-16T14:30:00"
-  },
-  "schedule": {
-    "enabled": true,
-    "mode": "hourly",
-    "custom_interval_minutes": 60
-  },
-  "logs": {
-    "retention_days": 30,
-    "max_file_size_mb": 10,
-    "compress_old_logs": false
-  },
-  "ui": {
-    "theme": "dark"
-  }
+    "backup": {
+        "input_path": "C:/source/folder",
+        "output_path": "C:/destination/folder",
+        "last_backup": "2025-10-16T14:30:00.000000"
+    },
+    "logs": {
+        "retention_days": 30,
+        "max_file_size_mb": 10,
+        "compress_old_logs": false
+    },
+    "ui": {
+        "theme": "dark"
+    }
 }
 ```
 
-### การปรับแต่งการตั้งค่า
+## Logs
 
-- **retention_days**: จำนวนวันที่เก็บ log (default: 30)
-- **max_file_size_mb**: ขนาดไฟล์ log สูงสุด (default: 10 MB)
-- **compress_old_logs**: เปิด/ปิดการบีบอัด log เก่า
+- **Location**: `logs/backup_YYYY-MM-DD.log`
+- **Retention**: 30 days (configurable)
+- **Content**: All backup operations, errors, and system events
+- **Cleanup**: Run `cleanup_logs.bat` or it happens automatically
 
-## วิธีการทำงาน
+## Troubleshooting
 
-### การสำรองข้อมูล
+### Backup doesn't run from Task Scheduler
+- Make sure Python is installed and in system PATH
+- Try running `backup_now.bat` manually first
+- Check Task Scheduler task settings (run whether user logged on or not)
+- Verify the path to BAT file in Task Scheduler is correct
 
-แอพจะสร้างโฟลเดอร์ใหม่ในปลายทางพร้อม timestamp:
+### "Source/destination not configured" error
+- Run `open_gui.bat` and configure folders
+- Or run `check_status.bat` to see current settings
 
-```
-D:/backup/
-├── source_folder_20251016_143000/
-│   ├── file1.txt
-│   ├── file2.jpg
-│   └── subfolder/
-│       └── file3.pdf
-```
+### Backup fails
+- Check if source folder exists and is accessible
+- Check if you have write permission to destination folder
+- Review log files in `logs/` folder for detailed error messages
 
-- **ชื่อโฟลเดอร์**: `{ชื่อโฟลเดอร์ต้นทาง}_{YYYYMMDD_HHMMSS}`
-- **คัดลอกทั้งหมด**: รวมไฟล์ย่อยและโฟลเดอร์ย่อยทั้งหมด
-- **รักษาโครงสร้าง**: คงโครงสร้างโฟลเดอร์เดิม
+### GUI doesn't open
+- Make sure Python is installed: `python --version`
+- Install dependencies: `pip install -r requirements.txt`
+- Try running: `python run_gui.py`
 
-### Log Files
+## Tips
 
-Log files ถูกเก็บในโฟลเดอร์ [logs/](logs/):
-
-```
-logs/
-├── backup_2025-10-16.log
-├── backup_2025-10-15.log
-└── backup_2025-10-14.log
-```
-
-**รูปแบบ Log:**
-
-```
-[2025-10-16 14:30:00] INFO: เริ่มการสำรองข้อมูล
-[2025-10-16 14:30:01] INFO: จาก: C:/source
-[2025-10-16 14:30:01] INFO: ไปยัง: D:/backup
-[2025-10-16 14:30:02] INFO: พบ 150 ไฟล์ (ขนาดรวม: 45.23 MB)
-[2025-10-16 14:30:05] INFO: ✓ การสำรองข้อมูลเสร็จสมบูรณ์
-```
-
-## คำถามที่พบบ่อย (FAQ)
-
-### 1. ไฟล์ปลายทางจะถูกเขียนทับหรือไม่?
-
-**ไม่** - แอพจะสร้างโฟลเดอร์ใหม่ทุกครั้งพร้อม timestamp เพื่อป้องกันการเขียนทับ
-
-### 2. รองรับโฟลเดอร์ขนาดใหญ่หรือไม่?
-
-**ใช่** - แอพรองรับโฟลเดอร์ทุกขนาด และแสดง progress แบบ real-time
-
-### 3. CLI สามารถรันในพื้นหลังได้หรือไม่?
-
-**ใช่** - ใช้โหมด `--schedule` จะรันอัตโนมัติจนกว่าจะกด Ctrl+C
-
-**Windows:**
-```bash
-start /B python run_cli.py --schedule hourly
-```
-
-**Linux/Mac:**
-```bash
-nohup python run_cli.py --schedule hourly &
-```
-
-### 4. จะเปลี่ยนจำนวนวันเก็บ log ได้อย่างไร?
-
-แก้ไขในไฟล์ [config/settings.json](config/settings.json):
-
-```json
-{
-  "logs": {
-    "retention_days": 60
-  }
-}
-```
-
-## ข้อควรระวัง
-
-- ตรวจสอบให้แน่ใจว่ามีพื้นที่เก็บข้อมูลเพียงพอในโฟลเดอร์ปลายทาง
-- หลีกเลี่ยงการสำรองไปยังโฟลเดอร์ย่อยของโฟลเดอร์ต้นทาง (circular backup)
-- Log files จะถูกลบอัตโนมัติตามที่ตั้งค่า
+1. **Schedule Daily Backups**: Set Task Scheduler to run at 2:00 AM daily
+2. **Check Status Regularly**: Run `check_status.bat` to verify last backup time
+3. **Monitor Logs**: Check log files occasionally for any errors
+4. **Clean Old Backups**: Manually delete old backup folders from destination when not needed
+5. **Test First**: Always test backup manually before setting up Task Scheduler
 
 ## License
 
-MIT License - ใช้งานได้อย่างอิสระ
+This project is provided as-is for personal use.
 
-## ผู้พัฒนา
+## Support
 
-พัฒนาด้วย Python, CustomTkinter, และ APScheduler
+For issues or questions, check:
+- `WINDOWS_TASK_SCHEDULER_SETUP.txt` for detailed setup instructions
+- Log files in `logs/` folder for error details
+- Run `check_status.bat` to verify configuration
 
 ---
 
-**เวอร์ชัน:** 1.0.0
-**อัพเดทล่าสุด:** 2025-10-16
+**Version:** 1.0.0
+**Last Updated:** 2025-10-16

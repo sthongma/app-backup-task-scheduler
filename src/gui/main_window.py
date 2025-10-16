@@ -29,7 +29,7 @@ class BackupApp(ctk.CTk):
 
         # Window settings
         self.title("File Backup Application")
-        self.geometry("900x600")
+        self.geometry("850x650")
 
         # Set defaults
         ctk.set_appearance_mode("dark")
@@ -61,110 +61,122 @@ class BackupApp(ctk.CTk):
     def create_ui(self):
         """Create UI"""
 
-        # ========== Header ==========
-        header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.pack(fill="x", padx=20, pady=(20, 10))
+        # ========== Main Content Container ==========
+        main_container = ctk.CTkFrame(self, corner_radius=10)
+        main_container.pack(fill="both", expand=True, padx=18, pady=18)
 
-        title_label = ctk.CTkLabel(
-            header_frame,
-            text="File Backup Application",
-            font=ctk.CTkFont(size=24, weight="bold")
+        # ========== Top Bar (Theme, Clear Log, Exit) ==========
+        top_bar_frame = ctk.CTkFrame(main_container, fg_color="transparent")
+        top_bar_frame.pack(fill="x", padx=12, pady=(12, 8))
+
+        # Theme Toggle
+        theme_btn = ctk.CTkButton(
+            top_bar_frame,
+            text="🌓 Theme",
+            width=100,
+            height=28,
+            font=ctk.CTkFont(size=12),
+            fg_color=("#3b8ed0", "#1f6aa5"),
+            hover_color=("#2d6da8", "#144870"),
+            command=self.toggle_theme
         )
-        title_label.pack()
+        theme_btn.pack(side="left", padx=3)
+
+        # Clear Log
+        clear_log_btn = ctk.CTkButton(
+            top_bar_frame,
+            text="🗑️ Clear",
+            width=100,
+            height=28,
+            font=ctk.CTkFont(size=12),
+            fg_color=("gray70", "gray30"),
+            hover_color=("gray60", "gray25"),
+            command=self.clear_log
+        )
+        clear_log_btn.pack(side="left", padx=3)
+
+        # Exit
+        exit_btn = ctk.CTkButton(
+            top_bar_frame,
+            text="✖ Exit",
+            width=80,
+            height=28,
+            font=ctk.CTkFont(size=12),
+            fg_color=("gray60", "gray20"),
+            hover_color=("gray50", "gray15"),
+            command=self.on_closing
+        )
+        exit_btn.pack(side="right", padx=3)
 
         # ========== Folder Selection ==========
-        folder_frame = ctk.CTkFrame(self)
-        folder_frame.pack(fill="x", padx=20, pady=10)
+        folder_frame = ctk.CTkFrame(main_container, corner_radius=8)
+        folder_frame.pack(fill="x", padx=15, pady=8)
 
         # Input Folder
-        input_label = ctk.CTkLabel(folder_frame, text="Source Folder:", font=ctk.CTkFont(size=14, weight="bold"))
-        input_label.grid(row=0, column=0, sticky="w", padx=10, pady=(10, 5))
+        input_label = ctk.CTkLabel(folder_frame, text="Source:", font=ctk.CTkFont(size=13, weight="bold"))
+        input_label.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 4))
 
-        input_entry = ctk.CTkEntry(folder_frame, textvariable=self.input_path, width=500)
-        input_entry.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="ew")
+        input_entry = ctk.CTkEntry(folder_frame, textvariable=self.input_path, height=32, font=ctk.CTkFont(size=12))
+        input_entry.grid(row=1, column=0, padx=12, pady=(0, 8), sticky="ew")
 
         input_btn = ctk.CTkButton(
             folder_frame,
-            text="Browse",
-            width=150,
+            text="📁 Browse",
+            width=110,
+            height=32,
+            font=ctk.CTkFont(size=12),
+            fg_color=("#3b8ed0", "#1f6aa5"),
+            hover_color=("#2d6da8", "#144870"),
             command=self.select_input_folder
         )
-        input_btn.grid(row=1, column=1, padx=10, pady=(0, 10))
+        input_btn.grid(row=1, column=1, padx=(8, 12), pady=(0, 8))
 
         # Output Folder
-        output_label = ctk.CTkLabel(folder_frame, text="Destination Folder:", font=ctk.CTkFont(size=14, weight="bold"))
-        output_label.grid(row=2, column=0, sticky="w", padx=10, pady=(10, 5))
+        output_label = ctk.CTkLabel(folder_frame, text="Destination:", font=ctk.CTkFont(size=13, weight="bold"))
+        output_label.grid(row=2, column=0, sticky="w", padx=12, pady=(8, 4))
 
-        output_entry = ctk.CTkEntry(folder_frame, textvariable=self.output_path, width=500)
-        output_entry.grid(row=3, column=0, padx=10, pady=(0, 10), sticky="ew")
+        output_entry = ctk.CTkEntry(folder_frame, textvariable=self.output_path, height=32, font=ctk.CTkFont(size=12))
+        output_entry.grid(row=3, column=0, padx=12, pady=(0, 12), sticky="ew")
 
         output_btn = ctk.CTkButton(
             folder_frame,
-            text="Browse",
-            width=150,
+            text="📁 Browse",
+            width=110,
+            height=32,
+            font=ctk.CTkFont(size=12),
+            fg_color=("#3b8ed0", "#1f6aa5"),
+            hover_color=("#2d6da8", "#144870"),
             command=self.select_output_folder
         )
-        output_btn.grid(row=3, column=1, padx=10, pady=(0, 10))
+        output_btn.grid(row=3, column=1, padx=(8, 12), pady=(0, 12))
 
         folder_frame.columnconfigure(0, weight=1)
 
         # ========== Backup Now Button ==========
-        backup_now_frame = ctk.CTkFrame(self, fg_color="transparent")
-        backup_now_frame.pack(fill="x", padx=20, pady=10)
+        backup_btn_frame = ctk.CTkFrame(main_container, corner_radius=8)
+        backup_btn_frame.pack(fill="x", padx=15, pady=8)
 
         self.backup_now_btn = ctk.CTkButton(
-            backup_now_frame,
-            text="Backup Now",
+            backup_btn_frame,
+            text="⚡ Backup Now",
             font=ctk.CTkFont(size=16, weight="bold"),
-            height=50,
-            fg_color="#28a745",
-            hover_color="#218838",
+            height=45,
+            corner_radius=6,
+            fg_color=("#3b8ed0", "#1f6aa5"),
+            hover_color=("#2d6da8", "#144870"),
             command=self.backup_now
         )
-        self.backup_now_btn.pack(fill="x", padx=10)
+        self.backup_now_btn.pack(fill="x", padx=12, pady=12)
 
         # ========== Log Display ==========
-        log_frame = ctk.CTkFrame(self)
-        log_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        log_frame = ctk.CTkFrame(main_container, corner_radius=8)
+        log_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
 
-        log_label = ctk.CTkLabel(log_frame, text="Log:", font=ctk.CTkFont(size=14, weight="bold"))
-        log_label.pack(anchor="w", padx=10, pady=(10, 5))
+        log_label = ctk.CTkLabel(log_frame, text="📋 Log:", font=ctk.CTkFont(size=13, weight="bold"))
+        log_label.pack(anchor="w", padx=12, pady=(12, 5))
 
-        self.log_textbox = ctk.CTkTextbox(log_frame, height=200, wrap="word")
-        self.log_textbox.pack(fill="both", expand=True, padx=10, pady=(0, 10))
-
-        # ========== Footer ==========
-        footer_frame = ctk.CTkFrame(self, fg_color="transparent")
-        footer_frame.pack(fill="x", padx=20, pady=(0, 20))
-
-        # Theme Toggle
-        theme_btn = ctk.CTkButton(
-            footer_frame,
-            text="Toggle Theme",
-            width=120,
-            command=self.toggle_theme
-        )
-        theme_btn.pack(side="left", padx=5)
-
-        # Clear Log
-        clear_log_btn = ctk.CTkButton(
-            footer_frame,
-            text="Clear Log",
-            width=120,
-            command=self.clear_log
-        )
-        clear_log_btn.pack(side="left", padx=5)
-
-        # Exit
-        exit_btn = ctk.CTkButton(
-            footer_frame,
-            text="Exit",
-            width=120,
-            fg_color="#dc3545",
-            hover_color="#c82333",
-            command=self.on_closing
-        )
-        exit_btn.pack(side="right", padx=5)
+        self.log_textbox = ctk.CTkTextbox(log_frame, height=180, wrap="word", corner_radius=6, font=ctk.CTkFont(size=11))
+        self.log_textbox.pack(fill="both", expand=True, padx=12, pady=(0, 12))
 
     def select_input_folder(self):
         """Select source folder"""
@@ -231,7 +243,7 @@ class BackupApp(ctk.CTk):
 
         finally:
             self.is_backing_up = False
-            self.after(0, lambda: self.backup_now_btn.configure(state="normal", text="Backup Now"))
+            self.after(0, lambda: self.backup_now_btn.configure(state="normal", text="⚡ Backup Now"))
 
     def update_progress(self, current, total, message):
         """Update progress (called from backup engine)"""
