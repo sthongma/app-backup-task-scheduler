@@ -1,0 +1,33 @@
+========================================
+   File Backup Scheduler - Installation
+========================================
+
+ขั้นตอนการติดตั้งและใช้งาน:
+
+1. ติดตั้ง Python Dependencies:
+
+   pip install -r requirements.txt
+
+   หรือติดตั้งทีละตัว:
+
+   pip install customtkinter==5.2.2
+   pip install APScheduler==3.10.4
+   pip install Pillow==10.3.0
+
+
+2. ทดสอบว่าติดตั้งสำเร็จ:
+
+   python run_cli.py --help
+
+
+3. เปิด GUI:
+
+   python run_gui.py
+
+
+หมายเหตุ:
+- ต้องใช้ Python 3.8 ขึ้นไป
+- บน Windows อาจต้องใช้ py แทน python
+- ถ้าเกิด error ให้ตรวจสอบว่าติดตั้ง pip แล้ว
+
+========================================
