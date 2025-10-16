@@ -1,9 +1,8 @@
 """
-GUI หลักสำหรับแอพพลิเคชัน Backup (CustomTkinter)
-- เลือก Input/Output folders
-- ปุ่มคัดลอกทันที
-- ตั้งค่า Auto Backup Schedule
-- แสดง Log real-time
+Main GUI for Backup Application (CustomTkinter)
+- Select Input/Output folders
+- Backup Now button
+- Real-time Log display
 """
 
 import customtkinter as ctk
@@ -13,61 +12,54 @@ import os
 from pathlib import Path
 import threading
 
-# เพิ่ม path สำหรับ import modules
+# Add path for importing modules
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.utils.logger import get_logger
 from src.utils.log_manager import LogManager, format_bytes
 from src.core.config_manager import ConfigManager
 from src.core.backup_engine import BackupEngine
-from src.core.scheduler import BackupScheduler
 
 
 class BackupApp(ctk.CTk):
-    """แอพพลิเคชัน Backup GUI"""
+    """Backup Application GUI"""
 
     def __init__(self):
         super().__init__()
 
         # Window settings
-        self.title("File Backup Scheduler - Automatic Backup System")
-        self.geometry("900x700")
+        self.title("File Backup Application")
+        self.geometry("900x600")
 
-        # กำหนดค่าเริ่มต้น
+        # Set defaults
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        # สร้าง instances
+        # Create instances
         self.logger = get_logger()
         self.log_manager = LogManager()
         self.config_manager = ConfigManager()
         self.backup_engine = BackupEngine(self.logger)
-        self.scheduler = BackupScheduler(self.logger)
 
-        # ตัวแปร
+        # Variables
         self.input_path = ctk.StringVar(value=self.config_manager.get('backup.input_path', ''))
         self.output_path = ctk.StringVar(value=self.config_manager.get('backup.output_path', ''))
-        self.schedule_mode = ctk.StringVar(value=self.config_manager.get('schedule.mode', 'off'))
-        self.custom_interval = ctk.IntVar(value=self.config_manager.get('schedule.custom_interval_minutes', 60))
         self.is_backing_up = False
 
-        # สร้าง UI
+        # Create UI
         self.create_ui()
 
-        # โหลดการตั้งค่า
+        # Load settings
         self.load_settings()
 
-        # รัน log maintenance
+        # Run log maintenance
         self.run_log_maintenance()
 
-        # ตั้งค่า backup function สำหรับ scheduler
-        self.scheduler.set_backup_function(self.run_scheduled_backup)
-
-        # Protocol สำหรับปิดหน้าต่าง
+        # Protocol for window closing
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def create_ui(self):
-        """สร้าง UI"""
+        """Create UI"""
 
         # ========== Header ==========
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -75,7 +67,7 @@ class BackupApp(ctk.CTk):
 
         title_label = ctk.CTkLabel(
             header_frame,
-            text="Automatic Backup System",
+            text="File Backup Application",
             font=ctk.CTkFont(size=24, weight="bold")
         )
         title_label.pack()
@@ -130,54 +122,6 @@ class BackupApp(ctk.CTk):
             command=self.backup_now
         )
         self.backup_now_btn.pack(fill="x", padx=10)
-
-        # ========== Schedule Settings ==========
-        schedule_frame = ctk.CTkFrame(self)
-        schedule_frame.pack(fill="x", padx=20, pady=10)
-
-        schedule_label = ctk.CTkLabel(
-            schedule_frame,
-            text="Auto Backup Settings:",
-            font=ctk.CTkFont(size=14, weight="bold")
-        )
-        schedule_label.grid(row=0, column=0, sticky="w", padx=10, pady=10, columnspan=3)
-
-        # Schedule Mode
-        mode_label = ctk.CTkLabel(schedule_frame, text="Mode:")
-        mode_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-
-        self.mode_menu = ctk.CTkOptionMenu(
-            schedule_frame,
-            values=["Off", "Hourly", "Daily", "Custom"],
-            variable=self.schedule_mode,
-            command=self.on_schedule_mode_changed,
-            width=200
-        )
-        self.mode_menu.grid(row=1, column=1, padx=10, pady=5, sticky="w")
-
-        # Custom Interval
-        self.interval_label = ctk.CTkLabel(schedule_frame, text="Interval (minutes):")
-        self.interval_label.grid(row=2, column=0, sticky="w", padx=10, pady=5)
-
-        self.interval_entry = ctk.CTkEntry(schedule_frame, textvariable=self.custom_interval, width=100)
-        self.interval_entry.grid(row=2, column=1, padx=10, pady=5, sticky="w")
-
-        # Apply Button
-        apply_btn = ctk.CTkButton(
-            schedule_frame,
-            text="Save Settings",
-            command=self.apply_schedule_settings,
-            width=150
-        )
-        apply_btn.grid(row=1, column=2, padx=10, pady=5, rowspan=2)
-
-        # Status
-        self.status_label = ctk.CTkLabel(
-            schedule_frame,
-            text="Status: Auto backup is off",
-            font=ctk.CTkFont(size=12)
-        )
-        self.status_label.grid(row=3, column=0, columnspan=3, sticky="w", padx=10, pady=(5, 10))
 
         # ========== Log Display ==========
         log_frame = ctk.CTkFrame(self)
@@ -275,6 +219,8 @@ class BackupApp(ctk.CTk):
 
                 # Update last backup time
                 self.config_manager.update_last_backup()
+                # Save paths
+                self.config_manager.set_backup_settings(input_path, output_path)
                 self.config_manager.save_config()
 
             else:
@@ -287,109 +233,12 @@ class BackupApp(ctk.CTk):
             self.is_backing_up = False
             self.after(0, lambda: self.backup_now_btn.configure(state="normal", text="Backup Now"))
 
-    def run_scheduled_backup(self):
-        """Run auto backup (called from scheduler)"""
-        input_path = self.input_path.get()
-        output_path = self.output_path.get()
-
-        if not input_path or not output_path:
-            self.logger.warning("Source and destination folders not configured")
-            return
-
-        if self.is_backing_up:
-            self.logger.warning("Backup already in progress, skipping this run")
-            return
-
-        # Run backup
-        result = self.backup_engine.backup(input_path, output_path)
-
-        if result['success']:
-            self.config_manager.update_last_backup()
-            self.config_manager.save_config()
-
     def update_progress(self, current, total, message):
         """Update progress (called from backup engine)"""
         self.after(0, lambda: self.log(message))
 
-    def on_schedule_mode_changed(self, value):
-        """When schedule mode changes"""
-        # Convert to internal mode
-        mode_map = {
-            "Off": "off",
-            "Hourly": "hourly",
-            "Daily": "daily",
-            "Custom": "custom"
-        }
-        self.schedule_mode.set(mode_map.get(value, "off"))
-
-        # Show/hide interval entry
-        if value == "Custom":
-            self.interval_label.grid()
-            self.interval_entry.grid()
-        else:
-            self.interval_label.grid_remove()
-            self.interval_entry.grid_remove()
-
-    def apply_schedule_settings(self):
-        """Save schedule settings"""
-        mode = self.schedule_mode.get()
-        interval = self.custom_interval.get()
-
-        # Save settings
-        self.config_manager.set_schedule_settings(
-            enabled=(mode != "off"),
-            mode=mode,
-            custom_interval_minutes=interval
-        )
-
-        # Save paths
-        self.config_manager.set_backup_settings(
-            self.input_path.get(),
-            self.output_path.get()
-        )
-
-        self.config_manager.save_config()
-
-        # Update scheduler
-        if mode == "off":
-            self.scheduler.stop()
-            self.status_label.configure(text="Status: Auto backup is off")
-        else:
-            success = self.scheduler.start(mode=mode, custom_interval_minutes=interval)
-
-            if success:
-                next_run = self.scheduler.get_next_run_time()
-                if next_run:
-                    self.status_label.configure(
-                        text=f"Status: Auto backup enabled ({self.scheduler.get_mode_description(mode)}) "
-                             f"| Next run: {next_run.strftime('%Y-%m-%d %H:%M:%S')}"
-                    )
-                else:
-                    self.status_label.configure(text=f"Status: Auto backup enabled ({self.scheduler.get_mode_description(mode)})")
-
-        self.log("Settings saved successfully")
-        messagebox.showinfo("Success", "Settings saved successfully")
-
     def load_settings(self):
         """Load settings"""
-        # Load schedule settings
-        schedule_settings = self.config_manager.get_schedule_settings()
-
-        if schedule_settings.get('enabled', False):
-            mode = schedule_settings.get('mode', 'off')
-            interval = schedule_settings.get('custom_interval_minutes', 60)
-
-            # Start scheduler
-            self.scheduler.start(mode=mode, custom_interval_minutes=interval)
-
-            # Update status
-            next_run = self.scheduler.get_next_run_time()
-            if next_run:
-                self.status_label.configure(
-                    text=f"Status: Auto backup enabled ({self.scheduler.get_mode_description(mode)}) "
-                         f"| Next run: {next_run.strftime('%Y-%m-%d %H:%M:%S')}"
-                )
-
         self.log("Settings loaded successfully")
 
     def run_log_maintenance(self):
@@ -407,16 +256,16 @@ class BackupApp(ctk.CTk):
             self.log(f"Error in log maintenance: {e}")
 
     def log(self, message):
-        """แสดง log ใน textbox"""
+        """Display log in textbox"""
         self.log_textbox.insert("end", f"{message}\n")
         self.log_textbox.see("end")
 
     def clear_log(self):
-        """ล้าง log textbox"""
+        """Clear log textbox"""
         self.log_textbox.delete("0.0", "end")
 
     def toggle_theme(self):
-        """สลับธีม"""
+        """Toggle theme"""
         current_mode = ctk.get_appearance_mode()
         new_mode = "Light" if current_mode == "Dark" else "Dark"
         ctk.set_appearance_mode(new_mode)
@@ -424,16 +273,12 @@ class BackupApp(ctk.CTk):
         self.config_manager.save_config()
 
     def on_closing(self):
-        """ปิดแอพพลิเคชัน"""
-        # หยุด scheduler
-        self.scheduler.shutdown()
-
-        # ปิดหน้าต่าง
+        """Close application"""
         self.destroy()
 
 
 def main():
-    """เริ่มแอพพลิเคชัน"""
+    """Start application"""
     app = BackupApp()
     app.mainloop()
 

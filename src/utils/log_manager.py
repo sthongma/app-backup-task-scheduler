@@ -1,7 +1,7 @@
 """
-ระบบจัดการไฟล์ Log อัตโนมัติ
-- ลบไฟล์ log เก่าที่เกินกำหนด
-- จำกัดขนาดไฟล์ log
+Automatic Log File Management System
+- Delete old log files that exceed retention period
+- Limit log file size
 - Compress log files (optional)
 """
 
@@ -13,30 +13,30 @@ import zipfile
 
 
 class LogManager:
-    """จัดการไฟล์ log อัตโนมัติ"""
+    """Manage log files automatically"""
 
     def __init__(self, log_dir="logs", retention_days=30, max_file_size_mb=10):
         """
-        สร้าง LogManager instance
+        Create LogManager instance
 
         Args:
-            log_dir: โฟลเดอร์ที่เก็บไฟล์ log
-            retention_days: จำนวนวันที่เก็บไฟล์ log (default: 30 วัน)
-            max_file_size_mb: ขนาดไฟล์ log สูงสุด (MB) (default: 10 MB)
+            log_dir: folder where log files are stored
+            retention_days: number of days to keep log files (default: 30 days)
+            max_file_size_mb: maximum log file size (MB) (default: 10 MB)
         """
         self.log_dir = Path(log_dir)
         self.retention_days = retention_days
         self.max_file_size_bytes = max_file_size_mb * 1024 * 1024
 
-        # สร้างโฟลเดอร์ถ้ายังไม่มี
+        # Create folder if it doesn't exist
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
     def cleanup_old_logs(self):
         """
-        ลบไฟล์ log เก่าที่เกินกำหนด
+        Delete old log files that exceed retention period
 
         Returns:
-            tuple: (จำนวนไฟล์ที่ลบ, จำนวน bytes ที่ลบ)
+            tuple: (number of deleted files, number of deleted bytes)
         """
         if not self.log_dir.exists():
             return 0, 0
@@ -45,15 +45,15 @@ class LogManager:
         deleted_count = 0
         deleted_bytes = 0
 
-        # วนลูปไฟล์ทั้งหมดในโฟลเดอร์ log
+        # Loop through all files in log folder
         for log_file in self.log_dir.glob("backup_*.log"):
             try:
-                # ตรวจสอบวันที่แก้ไขล่าสุด
+                # Check last modified date
                 file_mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
 
                 if file_mtime < cutoff_date:
                     file_size = log_file.stat().st_size
-                    log_file.unlink()  # ลบไฟล์
+                    log_file.unlink()  # Delete file
                     deleted_count += 1
                     deleted_bytes += file_size
 
@@ -63,7 +63,7 @@ class LogManager:
         return deleted_count, deleted_bytes
 
     def cleanup_zip_files(self):
-        """ลบไฟล์ zip เก่า"""
+        """Delete old zip files"""
         if not self.log_dir.exists():
             return 0
 
@@ -85,13 +85,13 @@ class LogManager:
 
     def check_file_size(self, file_path):
         """
-        ตรวจสอบขนาดไฟล์ log
+        Check log file size
 
         Args:
-            file_path: path ของไฟล์ที่ต้องการตรวจสอบ
+            file_path: path of file to check
 
         Returns:
-            bool: True ถ้าไฟล์มีขนาดเกินกำหนด
+            bool: True if file size exceeds limit
         """
         file_path = Path(file_path)
 
@@ -103,13 +103,13 @@ class LogManager:
 
     def compress_old_logs(self, days_threshold=7):
         """
-        Compress ไฟล์ log ที่เก่ากว่าที่กำหนด
+        Compress log files older than threshold
 
         Args:
-            days_threshold: จำนวนวันที่จะ compress (default: 7 วัน)
+            days_threshold: number of days for compression threshold (default: 7 days)
 
         Returns:
-            int: จำนวนไฟล์ที่ compress
+            int: number of compressed files
         """
         if not self.log_dir.exists():
             return 0
@@ -121,15 +121,15 @@ class LogManager:
             try:
                 file_mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
 
-                # Compress ไฟล์ที่เก่ากว่าที่กำหนด
+                # Compress files older than threshold
                 if file_mtime < cutoff_date:
                     zip_path = log_file.with_suffix('.log.zip')
 
-                    # สร้างไฟล์ zip
+                    # Create zip file
                     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                         zipf.write(log_file, log_file.name)
 
-                    # ลบไฟล์ต้นฉบับ
+                    # Delete original file
                     log_file.unlink()
                     compressed_count += 1
 
@@ -140,10 +140,10 @@ class LogManager:
 
     def get_log_files_info(self):
         """
-        ดึงข้อมูลไฟล์ log ทั้งหมด
+        Get information of all log files
 
         Returns:
-            list: รายการ dict ที่มีข้อมูลไฟล์ log
+            list: list of dict containing log file information
         """
         if not self.log_dir.exists():
             return []
@@ -168,13 +168,13 @@ class LogManager:
 
     def run_maintenance(self, compress_logs=False):
         """
-        รันการบำรุงรักษา log files
+        Run log files maintenance
 
         Args:
-            compress_logs: True ถ้าต้องการ compress logs เก่า
+            compress_logs: True if old logs should be compressed
 
         Returns:
-            dict: สรุปผลการทำงาน
+            dict: summary of maintenance results
         """
         result = {
             'deleted_logs': 0,
@@ -183,15 +183,15 @@ class LogManager:
             'compressed_logs': 0
         }
 
-        # ลบไฟล์ log เก่า
+        # Delete old log files
         deleted_count, deleted_bytes = self.cleanup_old_logs()
         result['deleted_logs'] = deleted_count
         result['deleted_bytes'] = deleted_bytes
 
-        # ลบไฟล์ zip เก่า
+        # Delete old zip files
         result['deleted_zips'] = self.cleanup_zip_files()
 
-        # Compress logs เก่า (ถ้าเปิดใช้งาน)
+        # Compress old logs (if enabled)
         if compress_logs:
             result['compressed_logs'] = self.compress_old_logs()
 
@@ -199,10 +199,10 @@ class LogManager:
 
     def get_total_log_size(self):
         """
-        คำนวณขนาดรวมของไฟล์ log ทั้งหมด
+        Calculate total size of all log files
 
         Returns:
-            tuple: (ขนาดรวม bytes, ขนาดรวม MB)
+            tuple: (total size in bytes, total size in MB)
         """
         if not self.log_dir.exists():
             return 0, 0
@@ -221,13 +221,13 @@ class LogManager:
 
 def format_bytes(bytes_size):
     """
-    แปลงขนาด bytes เป็นรูปแบบที่อ่านง่าย
+    Convert byte size to human-readable format
 
     Args:
-        bytes_size: ขนาดเป็น bytes
+        bytes_size: size in bytes
 
     Returns:
-        str: ขนาดในรูปแบบที่อ่านง่าย (KB, MB, GB)
+        str: size in human-readable format (KB, MB, GB)
     """
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
         if bytes_size < 1024.0:

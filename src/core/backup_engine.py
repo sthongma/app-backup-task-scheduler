@@ -1,8 +1,8 @@
 """
-ระบบคัดลอกไฟล์/โฟลเดอร์
-- คัดลอกทั้งโฟลเดอร์พร้อมไฟล์ย่อยทั้งหมด
-- แสดง progress และ status
-- บันทึก log การทำงาน
+File/Folder Backup System
+- Copy entire folders with all subfolders and files
+- Display progress and status
+- Log operations
 """
 
 import shutil
@@ -13,14 +13,14 @@ import time
 
 
 class BackupEngine:
-    """ระบบคัดลอกไฟล์อัตโนมัติ"""
+    """Automated file backup system"""
 
     def __init__(self, logger=None):
         """
-        สร้าง BackupEngine instance
+        Create BackupEngine instance
 
         Args:
-            logger: BackupLogger instance สำหรับบันทึก log
+            logger: BackupLogger instance for logging operations
         """
         self.logger = logger
         self.total_files = 0
@@ -33,22 +33,22 @@ class BackupEngine:
 
     def set_progress_callback(self, callback):
         """
-        ตั้งค่า callback function สำหรับรายงาน progress
+        Set callback function for progress reporting
 
         Args:
-            callback: function ที่รับ parameters (current, total, message)
+            callback: function that accepts parameters (current, total, message)
         """
         self.callback = callback
 
     def _count_files(self, source_path):
         """
-        นับจำนวนไฟล์และขนาดรวมในโฟลเดอร์
+        Count the number of files and total size in folder
 
         Args:
-            source_path: path ของโฟลเดอร์ต้นทาง
+            source_path: path of source folder
 
         Returns:
-            tuple: (จำนวนไฟล์, ขนาดรวม bytes)
+            tuple: (file count, total size in bytes)
         """
         file_count = 0
         total_size = 0
@@ -72,13 +72,13 @@ class BackupEngine:
 
     def _format_size(self, bytes_size):
         """
-        แปลงขนาด bytes เป็นรูปแบบที่อ่านง่าย
+        Convert byte size to human-readable format
 
         Args:
-            bytes_size: ขนาดเป็น bytes
+            bytes_size: size in bytes
 
         Returns:
-            str: ขนาดในรูปแบบที่อ่านง่าย
+            str: size in human-readable format
         """
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
             if bytes_size < 1024.0:
@@ -88,24 +88,24 @@ class BackupEngine:
 
     def _copy_file_with_progress(self, src, dst):
         """
-        คัดลอกไฟล์พร้อมอัพเดท progress
+        Copy file with progress update
 
         Args:
-            src: path ของไฟล์ต้นทาง
-            dst: path ของไฟล์ปลายทาง
+            src: path of source file
+            dst: path of destination file
 
         Returns:
-            bool: True ถ้าสำเร็จ
+            bool: True if successful
         """
         try:
-            # สร้างโฟลเดอร์ปลายทาง
+            # Create destination folder
             dst_path = Path(dst)
             dst_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # คัดลอกไฟล์
+            # Copy file
             shutil.copy2(src, dst)
 
-            # อัพเดท progress
+            # Update progress
             src_path = Path(src)
             file_size = src_path.stat().st_size
             self.copied_size += file_size
@@ -134,19 +134,19 @@ class BackupEngine:
 
     def backup(self, source_path, destination_path, overwrite=True):
         """
-        คัดลอกทั้งโฟลเดอร์
+        Copy entire folder
 
         Args:
-            source_path: path ของโฟลเดอร์ต้นทาง
-            destination_path: path ของโฟลเดอร์ปลายทาง
-            overwrite: True ถ้าต้องการเขียนทับโฟลเดอร์ปลายทาง
+            source_path: path of source folder
+            destination_path: path of destination folder
+            overwrite: True if destination folder should be overwritten
 
         Returns:
-            dict: ผลลัพธ์การคัดลอก
+            dict: backup operation result
         """
         start_time = time.time()
 
-        # รีเซ็ต counters
+        # Reset counters
         self.total_files = 0
         self.copied_files = 0
         self.failed_files = 0
@@ -203,7 +203,7 @@ class BackupEngine:
                 'copied_files': 0
             }
 
-        # สร้างชื่อโฟลเดอร์ปลายทางพร้อม timestamp
+        # Create destination folder name with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_folder_name = f"{source.name}_{timestamp}"
         final_destination = destination / backup_folder_name
@@ -225,16 +225,16 @@ class BackupEngine:
             self.logger.info(f"Starting file copy...")
 
         try:
-            # วนลูปคัดลอกไฟล์ทีละไฟล์
+            # Loop through and copy files one by one
             for root, dirs, files in os.walk(source):
                 root_path = Path(root)
                 relative_path = root_path.relative_to(source)
                 dest_dir = final_destination / relative_path
 
-                # สร้างโฟลเดอร์ย่อย
+                # Create subfolder
                 dest_dir.mkdir(parents=True, exist_ok=True)
 
-                # คัดลอกไฟล์
+                # Copy files
                 for file in files:
                     src_file = root_path / file
                     dst_file = dest_dir / file
@@ -286,23 +286,23 @@ class BackupEngine:
 
     def quick_backup(self, source_path, destination_path):
         """
-        คัดลอกแบบเร็ว (ใช้ shutil.copytree)
+        Quick backup (uses shutil.copytree)
 
         Args:
-            source_path: path ของโฟลเดอร์ต้นทาง
-            destination_path: path ของโฟลเดอร์ปลายทาง
+            source_path: path of source folder
+            destination_path: path of destination folder
 
         Returns:
-            dict: ผลลัพธ์การคัดลอก
+            dict: backup operation result
         """
         start_time = time.time()
 
         source = Path(source_path)
         destination = Path(destination_path)
 
-        # ตรวจสอบโฟลเดอร์ต้นทาง
+        # Check source folder
         if not source.exists() or not source.is_dir():
-            error_msg = f"โฟลเดอร์ต้นทางไม่ถูกต้อง: {source_path}"
+            error_msg = f"Invalid source folder: {source_path}"
             if self.logger:
                 self.logger.error(error_msg)
             return {
@@ -310,25 +310,25 @@ class BackupEngine:
                 'error': error_msg
             }
 
-        # สร้างชื่อโฟลเดอร์ปลายทาง
+        # Create destination folder name
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_folder_name = f"{source.name}_{timestamp}"
         final_destination = destination / backup_folder_name
 
         if self.logger:
-            self.logger.info(f"เริ่มการสำรองข้อมูล (โหมดเร็ว)")
-            self.logger.info(f"จาก: {source_path}")
-            self.logger.info(f"ไปยัง: {final_destination}")
+            self.logger.info(f"Starting backup (quick mode)")
+            self.logger.info(f"From: {source_path}")
+            self.logger.info(f"To: {final_destination}")
 
         try:
-            # คัดลอกทั้งโฟลเดอร์
+            # Copy entire folder
             shutil.copytree(source, final_destination)
 
             elapsed_time = time.time() - start_time
 
             if self.logger:
-                self.logger.success(f"คัดลอกสำเร็จใน {elapsed_time:.2f} วินาที")
-                self.logger.info(f"บันทึกที่: {final_destination}")
+                self.logger.success(f"Copy completed in {elapsed_time:.2f} seconds")
+                self.logger.info(f"Saved to: {final_destination}")
 
             return {
                 'success': True,
@@ -337,7 +337,7 @@ class BackupEngine:
             }
 
         except Exception as e:
-            error_msg = f"เกิดข้อผิดพลาด: {e}"
+            error_msg = f"Error occurred: {e}"
             if self.logger:
                 self.logger.error(error_msg)
 
